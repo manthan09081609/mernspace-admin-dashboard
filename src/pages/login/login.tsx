@@ -9,10 +9,34 @@ import {
   Typography,
 } from "antd";
 import { LockFilled, UserOutlined, LockOutlined } from "@ant-design/icons";
+import { useMutation } from "@tanstack/react-query";
+import { Credentials } from "../../types";
+import { login } from "../../http/api";
+import { useContext } from "react";
+import NotificationContext from "../../context/notification/NotificationContext";
 
 const { Paragraph } = Typography;
 
+const loginUser = async (credentials: Credentials) => {
+  const { data } = await login(credentials);
+  return data;
+};
+
 const LoginPage = () => {
+  const { open } = useContext(NotificationContext);
+
+  const { mutate, isPending } = useMutation({
+    mutationKey: ["login"],
+    mutationFn: loginUser,
+    onSuccess: async () => {
+      open("success", "login success");
+    },
+    onError: (error) => {
+      console.log(error);
+      open("error", error.name, error.message);
+    },
+  });
+
   return (
     <>
       <Layout
@@ -52,7 +76,12 @@ const LoginPage = () => {
               width: 300,
             }}
           >
-            <Form initialValues={{ remember: true }}>
+            <Form
+              initialValues={{ remember: true }}
+              onFinish={(values) => {
+                mutate({ email: values.email, password: values.password });
+              }}
+            >
               <Form.Item
                 name="email"
                 rules={[
@@ -103,6 +132,7 @@ const LoginPage = () => {
                   type="primary"
                   htmlType="submit"
                   style={{ width: "100%" }}
+                  loading={isPending}
                 >
                   Log In
                 </Button>
